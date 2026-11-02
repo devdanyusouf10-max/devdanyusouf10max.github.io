@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DeWallet</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+    :root {
+        --bg: #f1f5f9;
+        --card: #ffffff;
+        --subcard: #f8fafc;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #e2e8f0;
+        --blue: #108ee9;
+        --blue-dark: #0b63c2;
+        --green: #10b981;
+        --red: #f43f5e;
+        --amber: #f59e0b;
+        --lime: #c8f904;
+    }
+
+    /* MODE 2: GELAP */
+    .dark-mode {
+        --bg: #0b1120;
+        --card: #1e293b;
+        --subcard: #0f172a;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --border: #334155;
+    }
+
+    /* MODE 3: BENTO (SESUAI FOTO REFERENSI HIJAU TUA & LIME NEON) */
+    .bento-mode {
+        --bg: #062817;
+        --card: #f8faf7;
+        --subcard: #eef2ec;
+        --text: #091e12;
+        --muted: #476050;
+        --border: #13462c;
+        --blue: #c8f904;
+        --blue-dark: #a3cc00;
+        --green: #15803d;
+        --red: #e11d48;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        background: #030712;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    .phone-frame {
+        width: 100%;
+        max-width: 430px;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        position: relative;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.45);
+        transition: background 0.3s, color 0.3s;
+    }
+
+    /* Efek Grid Halus di Background saat Mode Bento Aktif (Persis Gambar) */
+    .phone-frame.bento-mode {
+        background-color: #062817;
+        background-image: 
+            linear-gradient(rgba(200, 249, 4, 0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(200, 249, 4, 0.06) 1px, transparent 1px);
+        background-size: 26px 26px;
+    }
+
+    .hidden { display: none !important; }
+
+    /* =========================================================
+       1. ANIMASI INTRO OTOMATIS (SAAT PERTAMA BUKA APP)
+       ========================================================= */
+    #splash-screen {
+        position: fixed;
+        top: 0; bottom: 0;
+        width: 100%; max-width: 430px;
+        z-index: 9999;
+        background: radial-gradient(circle at center, #0e4a2b 0%, #041b0f 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        animation: autoEnterApp 2.6s ease-in-out forwards;
+    }
+
+    @keyframes autoEnterApp {
+        0%, 82% { opacity: 1; visibility: visible; pointer-events: auto; }
+        100% { opacity: 0; visibility: hidden; pointer-events: none; z-index: -10; }
+    }
+
+    .wallet-anim-box {
+        font-size: 82px;
+        filter: drop-shadow(0 0 30px rgba(200, 249, 4, 0.7));
+        animation: walletSequence 1.45s cubic-bezier(0.2, 0.8, 0.3, 1.2) forwards;
+    }
+
+    @keyframes walletSequence {
+        0% { transform: translate(-160px, 180px) rotate(-120deg) scale(0.2); opacity: 0; }
+        45% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+        60% { transform: scale(1.25) rotate(-14deg); }
+        75% { transform: scale(1.5) rotate(14deg); filter: drop-shadow(0 0 60px #fff) brightness(1.8); }
+        90% { transform: scale(1.8) rotate(0deg); opacity: 1; }
+        100% { transform: scale(3.5); opacity: 0; }
+    }
+
+    .boom-ring {
+        position: absolute;
+        width: 30px; height: 30px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #ffffff 0%, #c8f904 50%, transparent 70%);
+        opacity: 0;
+        animation: ringExplode 0.6s 1.25s ease-out forwards;
+    }
+
+    @keyframes ringExplode {
+        0% { transform: scale(0); opacity: 1; }
+        100% { transform: scale(28); opacity: 0; }
+    }
+
+    .falling-coin {
+        position: absolute;
+        top: 42%;
+        left: 50%;
+        width: 34px; height: 34px;
+        margin-left: -17px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #fef08a 0%, #f59e0b 60%, #b45309 100%);
+        border: 2px solid #fef9c3;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.8);
+        color: #78350f;
+        font-weight: 900;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+    }
+
+    .c1 { animation: coinDrop1 1.2s 1.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .c2 { animation: coinDrop2 1.2s 1.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .c3 { animation: coinDrop3 1.2s 1.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .c4 { animation: coinDrop4 1.2s 1.30s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .c5 { animation: coinDrop5 1.2s 1.26s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .c6 { animation: coinDrop6 1.2s 1.32s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+    @keyframes coinDrop1 { 0% { transform: translate(0,0) scale(0.5); opacity:1; } 35% { transform: translate(-110px, -120px) rotate(180deg); opacity:1; } 100% { transform: translate(-140px, 420px) rotate(520deg); opacity:0; } }
+    @keyframes coinDrop2 { 0% { transform: translate(0,0) scale(0.5); opacity:1; } 35% { transform: translate(110px, -130px) rotate(-180deg); opacity:1; } 100% { transform: translate(145px, 420px) rotate(-520deg); opacity:0; } }
+    @keyframes coinDrop3 { 0% { transform: translate(0,0) scale(0.5); opacity:1; } 35% { transform: translate(-65px, -160px) rotate(140deg); opacity:1; } 100% { transform: translate(-85px, 430px) rotate(420deg); opacity:0; } }
+    @keyframes coinDrop4 { 0% { transform: translate(0,0) scale(0.5); opacity:1; } 35% { transform: translate(65px, -155px) rotate(-140deg); opacity:1; } 100% { transform: translate(90px, 430px) rotate(-420deg); opacity:0; } }
+    @keyframes coinDrop5 { 0% { transform: translate(0,0) scale(0.5); opacity:1; } 35% { transform: translate(-25px, -180px) rotate(200deg); opacity:1; } 100% { transform: translate(-35px, 450px) rotate(600deg); opacity:0; } }
+    @keyframes coinDrop6 { 0% { transform: translate(0,0) scale(0.5); opacity:1; } 35% { transform: translate(25px, -175px) rotate(-200deg); opacity:1; } 100% { transform: translate(40px, 450px) rotate(-600deg); opacity:0; } }
+
+    .splash-title {
+        color: #fff;
+        text-align: center;
+        margin-top: 18px;
+    }
+
+    /* =========================================================
+       2. STATUS BAR (HANYA JAM SESUAI LOKASI KITA)
+       ========================================================= */
+    .status-bar {
+        background: var(--blue);
+        color: #fff;
+        padding: 10px 20px 6px;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        font-size: 13px;
+        font-weight: 800;
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        letter-spacing: 0.3px;
+    }
+
+    .bento-mode .status-bar {
+        background: #041f11;
+        color: #ffffff;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* =========================================================
+       3. HEADER & TOMBOL MODE (TERANG / GELAP / BENTO)
+       ========================================================= */
+    .dana-header {
+        background: linear-gradient(155deg, #108ee9 0%, #0b63c2 65%, #1d4ed8 100%);
+        color: #fff;
+        padding: 12px 20px 52px;
+        border-radius: 0 0 32px 32px;
+        box-shadow: 0 8px 25px rgba(16, 142, 233, 0.25);
+        transition: all 0.3s;
+    }
+
+    .bento-mode .dana-header {
+        background: #062817;
+        padding: 12px 18px 24px;
+        border-radius: 0;
+        box-shadow: none;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .de-logo {
+        width: 36px; height: 36px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #38bdf8, #6366f1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 14px;
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.4);
+    }
+
+    .bento-mode .de-logo {
+        background: #c8f904;
+        color: #062817;
+        border-color: #c8f904;
+    }
+
+    /* Switcher 3 Mode: Terang, Gelap, Bento */
+    .theme-pill-group {
+        display: flex;
+        background: rgba(0, 0, 0, 0.22);
+        padding: 3px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        gap: 2px;
+    }
+
+    .theme-pill-btn {
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 10px;
+        font-weight: 800;
+        padding: 5px 9px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .theme-pill-btn.active {
+        background: #ffffff;
+        color: #0f172a;
+    }
+
+    .bento-mode .theme-pill-btn.active {
+        background: #c8f904;
+        color: #062817;
+    }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-top: 18px;
+        text-align: center;
+    }
+
+    /* Sembunyikan quick-actions standar saat Bento aktif karena diganti Grid Bento 4 Langkah */
+    .bento-mode .quick-actions {
+        display: none;
+    }
+
+    .qa-btn {
+        background: none;
+        border: none;
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .qa-icon {
+        width: 44px; height: 44px;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.16);
+        border: 1px solid rgba(255,255,255,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    /* =========================================================
+       4. DESAIN BENTO GRID (PERSIS GAMBAR REFERENSI "AILENE")
+       ========================================================= */
+    .bento-grid-showcase {
+        display: none;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 4px;
+    }
+
+    .bento-mode .bento-grid-showcase {
+        display: grid;
+    }
+
+    .bento-box {
+        background: #f8faf7;
+        color: #091e12;
+        border-radius: 24px;
+        padding: 15px 14px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 205px;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+        border: 2px solid rgba(255,255,255,0.8);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .bento-box.lime-card {
+        background: #c8f904;
+        border-color: #d9ff42;
+    }
+
+    .bento-step-pill {
+        display: inline-block;
+        align-self: flex-start;
+        background: #09150e;
+        color: #c8f904;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 5px 10px;
+        border-radius: 999px;
+        margin-bottom: 8px;
+    }
+
+    .bento-title {
+        font-size: 14px;
+        font-weight: 900;
+        color: #09150e;
+        line-height: 1.25;
+    }
+
+    .bento-sub {
+        font-size: 11px;
+        color: #334e3e;
+        font-weight: 700;
+        margin-top: 4px;
+    }
+
+    .bento-action-btn {
+        margin-top: 12px;
+        align-self: flex-start;
+        background: #09150e;
+        color: #c8f904;
+        border: none;
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Banner Bawah ala Gambar Referensi ("Nggak harus ribet buat atur uang") */
+    .bento-editorial-banner {
+        display: none;
+        background: #f8faf7;
+        color: #09150e;
+        border-radius: 24px;
+        padding: 20px 18px;
+        border: 2px solid #e2e8f0;
+    }
+
+    .bento-mode .bento-editorial-banner {
+        display: block;
+    }
+
+    .bento-highlight {
+        background: #c8f904;
+        padding: 2px 8px;
+        border-radius: 8px;
+        display: inline-block;
+    }
+
+    /* =========================================================
+       5. KARTU & KOMPONEN UMUM
+       ========================================================= */
+    .content-wrap {
+        padding: 0 16px 95px;
+        margin-top: -32px;
+        position: relative;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .bento-mode .content-wrap {
+        margin-top: 14px;
+    }
+
+    .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        padding: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .subcard {
+        background: var(--subcard);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 11px;
+    }
+
+    .bento-mode .subcard {
+        border-color: #d5ded7;
+    }
+
+    .row-between {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .input-box {
+        width: 100%;
+        background: var(--subcard);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 12px;
+        outline: none;
+    }
+
+    .btn-primary {
+        background: var(--blue);
+        color: #fff;
+        border: none;
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .bento-mode .btn-primary {
+        background: #09150e;
+        color: #c8f904;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        max-width: 430px;
+        background: var(--card);
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 6px 8px;
+        z-index: 40;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+    }
+
+    .bento-mode .bottom-nav {
+        background: #041f11;
+        border-top: 1px solid rgba(200, 249, 4, 0.2);
+    }
+
+    .nav-item {
+        background: none;
+        border: none;
+        color: var(--muted);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 4px 10px;
+    }
+
+    .nav-item.active {
+        color: var(--blue);
+    }
+
+    .bento-mode .nav-item {
+        color: #86a393;
+    }
+
+    .bento-mode .nav-item.active {
+        color: #c8f904;
+    }
+
+    .nav-center-btn {
+        width: 56px; height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #108ee9, #0b63c2);
+        color: #fff;
+        border: 4px solid var(--card);
+        box-shadow: 0 6px 18px rgba(16, 142, 233, 0.45);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 9px;
+        cursor: pointer;
+        margin-top: -26px;
+    }
+
+    .bento-mode .nav-center-btn {
+        background: #c8f904;
+        color: #062817;
+        border-color: #062817;
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(200, 249, 4, 0.35);
+    }
+
+    /* Modal Bottom Sheet */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 100;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+    }
+
+    .modal-sheet {
+        width: 100%;
+        max-width: 430px;
+        background: var(--card);
+        color: var(--text);
+        border-radius: 26px 26px 0 0;
+        padding: 20px;
+        animation: slideUp 0.25s ease-out;
+    }
+
+    @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+
+    /* Toast Notification */
+    #toast-box {
+        position: fixed;
+        top: 42px;
+        width: 100%;
+        max-width: 430px;
+        padding: 0 16px;
+        z-index: 9000;
+        pointer-events: none;
+    }
+
+    .toast-item {
+        background: #09150e;
+        color: #c8f904;
+        padding: 12px 16px;
+        border-radius: 14px;
+        font-size: 12px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+        border-left: 4px solid #c8f904;
+    }
+</style>
+</head>
+<body>
+
+<div id="app-frame" class="phone-frame">
+
+    <!-- TOAST NOTIFIKASI -->
+    <div id="toast-box"></div>
+
+    <!-- 1. SPLASH SCREEN INTRO (NAMA DEWALLET TANPA PRO) -->
+    <div id="splash-screen" onclick="this.style.display='none'">
+        <div class="boom-ring"></div>
+        <div class="wallet-anim-box">👛</div>
+
+        <div class="falling-coin c1">Rp</div>
+        <div class="falling-coin c2">De</div>
+        <div class="falling-coin c3">Rp</div>
+        <div class="falling-coin c4">De</div>
+        <div class="falling-coin c5">Rp</div>
+        <div class="falling-coin c6">De</div>
+
+        <div class="splash-title">
+            <div style="font-size: 28px; font-weight: 900; letter-spacing: -0.5px;">DeWallet</div>
+            <p style="font-size: 11px; color: #c8f904; margin-top: 4px;">Dompet pintar pengatur keuanganmu</p>
+        </div>
+    </div>
+
+    <!-- 2. STATUS BAR HP (HANYA JAM SESUAI LOKASI KITA, TANPA BATERAI/5G) -->
+    <div class="status-bar">
+        <span id="clock-text">--:--</span>
+    </div>
+
+    <!-- ================= TAB 1: BERANDA ================= -->
+    <section id="tab-home">
+        <div class="dana-header">
+            <div class="row-between">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="de-logo">De</div>
+                    <div>
+                        <div style="font-weight:900; font-size:18px; letter-spacing:-0.4px;">DeWallet</div>
+                        <div id="home-greeting" style="font-size:11px; opacity:0.85;">Halo, Sultan!</div>
+                    </div>
+                </div>
+
+                <!-- TOMBOL PILIH 3 MODE: TERANG, GELAP, BENTO -->
+                <div class="theme-pill-group">
+                    <button id="mode-light" class="theme-pill-btn" onclick="setThemeMode('light')">☀️ Terang</button>
+                    <button id="mode-dark" class="theme-pill-btn" onclick="setThemeMode('dark')">🌙 Gelap</button>
+                    <button id="mode-bento" class="theme-pill-btn" onclick="setThemeMode('bento')">🍱 Bento</button>
+                </div>
+            </div>
+
+            <!-- Saldo Utama -->
+            <div style="margin-top: 16px;" class="row-between">
+                <div>
+                    <div style="font-size: 11px; opacity:0.85; display:flex; align-items:center; gap:6px;">
+                        <span>Total Saldo DeWallet</span>
+                        <span onclick="toggleHideSaldo()" style="cursor:pointer; font-size:13px;">👁️</span>
+                    </div>
+                    <div id="main-balance" style="font-size: 30px; font-weight: 900; margin-top: 2px;">Rp 0</div>
+                </div>
+                <button onclick="openTxModal('income')" style="background:#c8f904; color:#062817; border:none; padding:9px 15px; border-radius:999px; font-size:12px; font-weight:900; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                    Mulai <span>→</span>
+                </button>
+            </div>
+
+            <!-- 4 Menu Cepat (Tampil di Mode Terang & Gelap) -->
+            <div class="quick-actions">
+                <button class="qa-btn" onclick="openTxModal('income')">
+                    <div class="qa-icon">➕</div>
+                    <span style="font-size:11px; font-weight:700;">Uang Masuk</span>
+                </button>
+                <button class="qa-btn" onclick="openTxModal('expense')">
+                    <div class="qa-icon">➖</div>
+                    <span style="font-size:11px; font-weight:700;">Uang Keluar</span>
+                </button>
+                <button class="qa-btn" onclick="switchTab('wallet')">
+                    <div class="qa-icon">📊</div>
+                    <span style="font-size:11px; font-weight:700;">Analisis</span>
+                </button>
+                <button class="qa-btn" onclick="switchTab('history')">
+                    <div class="qa-icon">📸</div>
+                    <span style="font-size:11px; font-weight:700;">Histori & Foto</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="content-wrap">
+
+            <!-- GRID 4 KARTU BENTO (PERSIS SEPERTI GAMBAR REFERENSI SAAT MODE BENTO AKTIF) -->
+            <div class="bento-grid-showcase">
+                <!-- Kartu 1: Putih -->
+                <div class="bento-box">
+                    <div>
+                        <span class="bento-step-pill">Langkah 1 • Pemasukan</span>
+                        <div class="bento-title">Uang Masuk</div>
+                        <div class="bento-sub" id="bento-in-val">+Rp 0</div>
+                        <div style="font-size:34px; margin-top:8px;">🦫💰</div>
+                    </div>
+                    <button class="bento-action-btn" onclick="openTxModal('income')">Catat masuk →</button>
+                </div>
+
+                <!-- Kartu 2: Hijau Lime Neon -->
+                <div class="bento-box lime-card">
+                    <div>
+                        <span class="bento-step-pill">Langkah 2 • Pengeluaran</span>
+                        <div class="bento-title">Uang Keluar</div>
+                        <div class="bento-sub" id="bento-out-val" style="color:#09150e;">-Rp 0</div>
+                        <div style="margin-top:10px; height:6px; background:rgba(0,0,0,0.15); border-radius:99px; overflow:hidden;">
+                            <div id="bento-out-bar" style="width:45%; height:100%; background:#09150e;"></div>
+                        </div>
+                    </div>
+                    <button class="bento-action-btn" onclick="openTxModal('expense')">Catat keluar →</button>
+                </div>
+
+                <!-- Kartu 3: Putih -->
+                <div class="bento-box">
+                    <div>
+                        <span class="bento-step-pill">Langkah 3 • Bukti</span>
+                        <div class="bento-title">Histori & Foto</div>
+                        <div class="bento-sub" id="bento-tx-count">0 Catatan tersimpan</div>
+                    </div>
+                    <button class="bento-action-btn" onclick="switchTab('history')">Lihat contohnya →</button>
+                </div>
+
+                <!-- Kartu 4: Putih -->
+                <div class="bento-box">
+                    <div>
+                        <span class="bento-step-pill">Langkah 4 • Tumbuh</span>
+                        <div class="bento-title">Target Impian</div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
+                            <div style="text-align:center;">
+                                <div style="width:26px; height:26px; border-radius:50%; background:#c8f904; border:2px solid #09150e; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; margin:0 auto;">✓</div>
+                                <span style="font-size:9px; font-weight:700;">Awal</span>
+                            </div>
+                            <div style="flex:1; border-top:2px dashed #94a3b8; margin:0 4px 12px;"></div>
+                            <div style="text-align:center;">
+                                <div style="width:26px; height:26px; border-radius:50%; background:#e2e8f0; border:2px solid #475569; display:flex; align-items:center; justify-content:center; font-size:11px; margin:0 auto;">🎯</div>
+                                <span id="bento-dream-pct" style="font-size:9px; font-weight:700;">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="bento-action-btn" onclick="switchTab('wallet')">Lihat target →</button>
+                </div>
+            </div>
+
+            <!-- FITUR KETIK CEPAT -->
+            <div class="card">
+                <div class="row-between" style="margin-bottom:8px;">
+                    <span style="font-size:12px; font-weight:900;">⚡ Ketik Cepat Transaksi</span>
+                    <span style="font-size:10px; font-weight:800; opacity:0.75;">Cth: dapat 100rb / keluar 35k</span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="quick-input" class="input-box" placeholder="Ketik: dapat 100.000 atau keluar 35k kopi">
+                    <button class="btn-primary" onclick="processQuickInput()">Catat →</button>
+                </div>
+            </div>
+
+            <!-- KOTAK TOTAL MASUK & TOTAL KELUAR -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="card" style="padding:12px; display:flex; align-items:center; gap:10px;">
+                    <div style="width:36px; height:36px; border-radius:10px; background:rgba(16,185,129,0.15); color:var(--green); display:flex; align-items:center; justify-content:center; font-weight:900;">↑</div>
+                    <div style="overflow:hidden;">
+                        <div style="font-size:10px; color:var(--muted); font-weight:700;">Total Masuk</div>
+                        <div id="home-in" style="font-size:13px; font-weight:900; color:var(--green);">+Rp 0</div>
+                    </div>
+                </div>
+                <div class="card" style="padding:12px; display:flex; align-items:center; gap:10px;">
+                    <div style="width:36px; height:36px; border-radius:10px; background:rgba(244,63,94,0.15); color:var(--red); display:flex; align-items:center; justify-content:center; font-weight:900;">↓</div>
+                    <div style="overflow:hidden;">
+                        <div style="font-size:10px; color:var(--muted); font-weight:700;">Total Keluar</div>
+                        <div id="home-out" style="font-size:13px; font-weight:900; color:var(--red);">-Rp 0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRAFIK NAIK-TURUN BERDASARKAN JAM -->
+            <div class="card">
+                <div class="row-between" style="margin-bottom:10px;">
+                    <div>
+                        <div style="font-size:12px; font-weight:900;">📈 Grafik Naik-Turun per Jam</div>
+                        <div style="font-size:10px; color:var(--muted);">Pergerakan saldo & transaksi hari ini</div>
+                    </div>
+                    <div style="display:flex; background:var(--subcard); padding:2px; border-radius:8px; border:1px solid var(--border);">
+                        <button id="btn-mode-saldo" onclick="setChartMode('saldo')" style="border:none; padding:4px 8px; border-radius:6px; font-size:10px; font-weight:800; background:#09150e; color:#c8f904; cursor:pointer;">Saldo</button>
+                        <button id="btn-mode-inout" onclick="setChartMode('inout')" style="border:none; padding:4px 8px; border-radius:6px; font-size:10px; font-weight:800; background:transparent; color:var(--muted); cursor:pointer;">Masuk/Keluar</button>
+                    </div>
+                </div>
+                <div id="hourly-chart-box" style="height:155px; width:100%;"></div>
+            </div>
+
+            <!-- HISTORI TERBARU DI BERANDA -->
+            <div class="card">
+                <div class="row-between" style="margin-bottom:10px;">
+                    <span style="font-size:12px; font-weight:900;">🕒 Histori Transaksi Terbaru</span>
+                    <span onclick="switchTab('history')" style="font-size:11px; font-weight:800; cursor:pointer; text-decoration:underline;">Lihat Semua →</span>
+                </div>
+                <div id="recent-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+
+            <!-- BANNER EDITORIAL ALA GAMBAR REFERENSI (MUNCUL DI MODE BENTO) -->
+            <div class="bento-editorial-banner">
+                <div style="font-size:13px; font-style:italic; color:#15803d; font-weight:700;">DeWallet itu kepake buat apa sih?</div>
+                <div style="font-size:24px; font-weight:900; line-height:1.2; margin-top:6px; letter-spacing:-0.5px;">
+                    Nggak harus ribet akuntansi buat <span class="bento-highlight">atur uang.</span>
+                </div>
+                <p style="font-size:11px; color:#476050; margin-top:8px;">
+                    Catat uang masuk, uang keluar, jam transaksi, hingga foto struk belanjaan dalam satu genggaman.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= TAB 2: RIWAYAT LENGKAP ================= -->
+    <section id="tab-history" class="hidden">
+        <div class="dana-header" style="padding-bottom:36px;">
+            <h2 style="font-size:18px; font-weight:900;">Riwayat Transaksi</h2>
+            <p style="font-size:11px; opacity:0.85; margin-top:2px;">Semua catatan alasan, jam transaksi & lampiran foto</p>
+            <input type="text" id="search-box" oninput="renderAll()" class="input-box" style="margin-top:12px; background:#fff; color:#000;" placeholder="🔍 Cari catatan, makanan, gaji, atau jam...">
+        </div>
+
+        <div class="content-wrap" style="margin-top:-18px;">
+            <div style="display:flex; gap:6px; overflow-x:auto;">
+                <button id="f-all" onclick="setFilter('all')" class="btn-primary" style="border-radius:20px; padding:6px 14px; font-size:11px;">Semua</button>
+                <button id="f-income" onclick="setFilter('income')" class="card" style="border-radius:20px; padding:6px 14px; font-size:11px; font-weight:700; cursor:pointer;">Masuk (+)</button>
+                <button id="f-expense" onclick="setFilter('expense')" class="card" style="border-radius:20px; padding:6px 14px; font-size:11px; font-weight:700; cursor:pointer;">Keluar (-)</button>
+                <button id="f-photo" onclick="setFilter('photo')" class="card" style="border-radius:20px; padding:6px 14px; font-size:11px; font-weight:700; cursor:pointer;">📸 Ada Foto</button>
+            </div>
+
+            <div id="history-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+    </section>
+
+    <!-- ================= TAB 3: DOMPET & ANALISIS ================= -->
+    <section id="tab-wallet" class="hidden">
+        <div class="dana-header" style="padding-bottom:42px;">
+            <h2 style="font-size:18px; font-weight:900;">Dompet & Analisis</h2>
+            <p style="font-size:11px; opacity:0.85;">Kartu DeWallet, kesehatan dompet & target impian</p>
+        </div>
+
+        <div class="content-wrap">
+            <!-- Kartu Virtual DeWallet -->
+            <div style="background:linear-gradient(135deg, #091e12, #062817, #15803d); color:#fff; border-radius:24px; padding:20px; box-shadow:0 12px 25px rgba(0,0,0,0.3); border:1px solid rgba(200,249,4,0.3);">
+                <div class="row-between">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div class="de-logo" style="width:26px; height:26px; font-size:11px; background:#c8f904; color:#062817;">De</div>
+                        <span style="font-size:11px; font-weight:800; color:#c8f904; letter-spacing:1px;">DEWALLET CARD</span>
+                    </div>
+                    <span style="font-size:12px;">)))</span>
+                </div>
+                <div style="font-size:10px; color:#94a3b8; margin-top:16px;">SALDO AKTIF</div>
+                <div id="card-balance" style="font-size:24px; font-weight:900; margin-top:2px;">Rp 0</div>
+                <div class="row-between" style="margin-top:18px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.12); font-size:11px;">
+                    <span id="card-owner" style="font-weight:800;">SULTAN DEWALLET</span>
+                    <span style="color:#c8f904; font-family:monospace;">•••• 8899</span>
+                </div>
+            </div>
+
+            <!-- Financial Insights -->
+            <div class="card">
+                <div class="row-between" style="margin-bottom:10px;">
+                    <span style="font-size:12px; font-weight:800;">💡 Kesehatan Finansial</span>
+                    <span id="health-status" style="font-size:10px; font-weight:800; padding:3px 10px; border-radius:12px; background:rgba(16,185,129,0.15); color:var(--green);">Aman 👍</span>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div class="subcard">
+                        <div style="font-size:10px; color:var(--muted);">Rata-rata Keluar</div>
+                        <div id="avg-burn" style="font-size:12px; font-weight:900; color:var(--red); margin-top:3px;">Rp 0 / tx</div>
+                    </div>
+                    <div class="subcard">
+                        <div style="font-size:10px; color:var(--muted);">Rasio Sisa Saldo</div>
+                        <div id="savings-rate" style="font-size:12px; font-weight:900; color:var(--green); margin-top:3px;">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rincian Kategori Pengeluaran -->
+            <div class="card">
+                <div style="font-size:12px; font-weight:800; margin-bottom:10px;">🍩 Pengeluaran per Kategori</div>
+                <div id="category-bars" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+
+            <!-- Target Impian -->
+            <div class="card">
+                <div class="row-between" style="margin-bottom:8px;">
+                    <span style="font-size:12px; font-weight:800;">🎯 Target Impian</span>
+                    <span onclick="openDreamSheet()" style="font-size:11px; font-weight:800; cursor:pointer; text-decoration:underline;">Ubah Target</span>
+                </div>
+                <div class="subcard">
+                    <div class="row-between" style="font-size:12px; font-weight:800;">
+                        <span id="dream-name">Beli Gadget Baru</span>
+                        <span id="dream-pct" style="color:var(--green);">0%</span>
+                    </div>
+                    <div id="dream-desc" style="font-size:10px; color:var(--muted); margin-top:3px;">Terkumpul Rp 0 dari Rp 5.000.000</div>
+                    <div style="height:8px; background:var(--border); border-radius:10px; overflow:hidden; margin-top:8px;">
+                        <div id="dream-bar" style="height:100%; width:0%; background:var(--green); transition:width 0.4s;"></div>
+                    </div>
+                    <button onclick="openDepositDreamSheet()" class="btn-primary" style="width:100%; margin-top:10px;">+ Tabung ke Impian →</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= TAB 4: SAYA / AKUN (TANPA PUTAR ANIMASI DOMPET) ================= -->
+    <section id="tab-profile" class="hidden">
+        <div class="dana-header" style="padding-bottom:46px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="de-logo" style="width:52px; height:52px; font-size:20px; border-radius:18px;">De</div>
+                <div style="flex:1;">
+                    <div id="prof-name" style="font-size:16px; font-weight:900;">Sultan DeWallet</div>
+                    <div id="prof-phone" style="font-size:11px; opacity:0.85; margin-top:2px;">ID DeWallet • 0812-8888-9999</div>
+                </div>
+                <button onclick="openProfileSheet()" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3); padding:6px 12px; border-radius:10px; font-size:11px; font-weight:800; cursor:pointer;">Edit</button>
+            </div>
+        </div>
+
+        <div class="content-wrap">
+            <div class="card" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div>
+                    <div style="font-size:10px; color:var(--muted);">Total Uang Masuk</div>
+                    <div id="prof-in" style="font-size:13px; font-weight:900; color:var(--green); margin-top:2px;">Rp 0</div>
+                </div>
+                <div>
+                    <div style="font-size:10px; color:var(--muted);">Total Uang Keluar</div>
+                    <div id="prof-out" style="font-size:13px; font-weight:900; color:var(--red); margin-top:2px;">Rp 0</div>
+                </div>
+            </div>
+
+            <!-- Pilihan 3 Mode Desain di Halaman Saya -->
+            <div class="card">
+                <div style="font-size:12px; font-weight:900; margin-bottom:10px;">🎨 Pilih Mode Desain DeWallet</div>
+                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+                    <button onclick="setThemeMode('light')" class="subcard" style="cursor:pointer; font-size:11px; font-weight:800; text-align:center;">☀️ Terang</button>
+                    <button onclick="setThemeMode('dark')" class="subcard" style="cursor:pointer; font-size:11px; font-weight:800; text-align:center;">🌙 Gelap</button>
+                    <button onclick="setThemeMode('bento')" class="subcard" style="cursor:pointer; font-size:11px; font-weight:800; text-align:center; background:#c8f904; color:#062817;">🍱 Bento</button>
+                </div>
+            </div>
+
+            <!-- Menu Pengaturan -->
+            <div class="card" style="padding:6px 14px; display:flex; flex-direction:column;">
+                <div onclick="openProfileSheet()" class="row-between" style="padding:12px 0; border-bottom:1px solid var(--border); cursor:pointer;">
+                    <span style="font-size:12px; font-weight:700;">🪪 Ubah Nama & Nomor Akun</span>
+                    <span>›</span>
+                </div>
+                <div onclick="exportCSV()" class="row-between" style="padding:12px 0; border-bottom:1px solid var(--border); cursor:pointer;">
+                    <span style="font-size:12px; font-weight:700;">📥 Download Laporan (CSV)</span>
+                    <span>›</span>
+                </div>
+                <div onclick="openResetSheet()" class="row-between" style="padding:12px 0; cursor:pointer; color:var(--red);">
+                    <span style="font-size:12px; font-weight:800;">🗑️ Hapus & Reset Semua Data</span>
+                    <span>›</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= NAVIGASI BAWAH ================= -->
+    <nav class="bottom-nav">
+        <button id="nav-home" class="nav-item active" onclick="switchTab('home')">
+            <span style="font-size:16px;">🏠</span>
+            <span>Beranda</span>
+        </button>
+        <button id="nav-history" class="nav-item" onclick="switchTab('history')">
+            <span style="font-size:16px;">📜</span>
+            <span>Riwayat</span>
+        </button>
+        <button class="nav-center-btn" onclick="openTxModal('income')">
+            <span style="font-size:18px; line-height:1;">＋</span>
+            <span>CATAT</span>
+        </button>
+        <button id="nav-wallet" class="nav-item" onclick="switchTab('wallet')">
+            <span style="font-size:16px;">👛</span>
+            <span>Dompet</span>
+        </button>
+        <button id="nav-profile" class="nav-item" onclick="switchTab('profile')">
+            <span style="font-size:16px;">👤</span>
+            <span>Saya</span>
+        </button>
+    </nav>
+
+    <!-- ================= MODAL INPUT / EDIT TRANSAKSI ================= -->
+    <div id="tx-modal" class="modal-overlay hidden" onclick="closeTxModal()">
+        <div class="modal-sheet" onclick="event.stopPropagation()">
+            <div class="row-between" style="margin-bottom:14px;">
+                <h3 id="tx-modal-title" style="font-size:14px; font-weight:900;">Catat Transaksi</h3>
+                <button onclick="closeTxModal()" style="border:none; background:var(--subcard); color:var(--text); width:28px; height:28px; border-radius:50%; cursor:pointer;">✕</button>
+            </div>
+
+            <form onsubmit="saveTransaction(event)" style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; background:var(--subcard); padding:4px; border-radius:12px;">
+                    <button type="button" id="m-btn-in" onclick="setModalType('income')" style="padding:8px; border:none; border-radius:9px; font-size:12px; font-weight:800; background:var(--green); color:#fff; cursor:pointer;">+ Uang Masuk</button>
+                    <button type="button" id="m-btn-out" onclick="setModalType('expense')" style="padding:8px; border:none; border-radius:9px; font-size:12px; font-weight:800; background:transparent; color:var(--muted); cursor:pointer;">- Uang Keluar</button>
+                </div>
+
+                <div>
+                    <label style="font-size:11px; font-weight:700; color:var(--muted);">Nominal (Rp)</label>
+                    <input type="text" id="m-amount" required oninput="formatInputRp(this)" class="input-box" style="font-size:15px; font-weight:900; margin-top:4px;" placeholder="100.000">
+                    <div style="display:flex; gap:6px; margin-top:6px;">
+                        <button type="button" onclick="addNominal(20000)" class="subcard" style="padding:4px 8px; font-size:10px; font-weight:800; cursor:pointer; color:var(--text);">+20rb</button>
+                        <button type="button" onclick="addNominal(50000)" class="subcard" style="padding:4px 8px; font-size:10px; font-weight:800; cursor:pointer; color:var(--text);">+50rb</button>
+                        <button type="button" onclick="addNominal(100000)" class="subcard" style="padding:4px 8px; font-size:10px; font-weight:800; cursor:pointer; color:var(--text);">+100rb</button>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div>
+                        <label style="font-size:11px; font-weight:700; color:var(--muted);">Kategori</label>
+                        <select id="m-category" class="input-box" style="margin-top:4px; font-weight:700;">
+                            <option value="Gaji / Bonus">💰 Gaji / Bonus</option>
+                            <option value="Makanan">🍔 Makanan</option>
+                            <option value="Belanja">🛍️ Belanja</option>
+                            <option value="Transport">🛵 Transport</option>
+                            <option value="Tagihan">⚡ Tagihan</option>
+                            <option value="Lainnya">📌 Lainnya</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:11px; font-weight:700; color:var(--muted);">Jam</label>
+                        <input type="time" id="m-time" class="input-box" style="margin-top:4px; font-weight:700;">
+                    </div>
+                </div>
+
+                <div>
+                    <label style="font-size:11px; font-weight:700; color:var(--muted);">Catatan Transaksi</label>
+                    <input type="text" id="m-note" class="input-box" style="margin-top:4px;" placeholder="Tulis catatan alasan masuk/keluar...">
+                </div>
+
+                <div>
+                    <label for="m-photo" style="display:block; text-align:center; padding:10px; border:1px dashed var(--muted); border-radius:12px; font-size:11px; font-weight:800; cursor:pointer;">
+                        📸 Lampirkan Foto Bukti / Barang (Opsional)
+                    </label>
+                    <input type="file" id="m-photo" accept="image/*" class="hidden" onchange="handlePhoto(event)">
+                    <div id="m-photo-preview" class="subcard hidden" style="margin-top:6px; display:flex; align-items:center; justify-content:space-between;">
+                        <img id="m-photo-img" src="" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">
+                        <span style="font-size:11px;">Foto siap disimpan</span>
+                        <button type="button" onclick="clearPhoto()" style="border:none; background:none; color:var(--red); font-size:11px; font-weight:800; cursor:pointer;">Hapus</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" style="padding:12px; font-size:13px; margin-top:4px;">Simpan ke DeWallet →</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL CUSTOM BOTTOM SHEET ================= -->
+    <div id="custom-modal" class="modal-overlay hidden" onclick="closeCustomModal()">
+        <div class="modal-sheet" onclick="event.stopPropagation()">
+            <div class="row-between" style="margin-bottom:12px;">
+                <h3 id="custom-title" style="font-size:14px; font-weight:900;">Pengaturan</h3>
+                <button onclick="closeCustomModal()" style="border:none; background:var(--subcard); color:var(--text); width:28px; height:28px; border-radius:50%; cursor:pointer;">✕</button>
+            </div>
+            <div id="custom-body"></div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL ZOOM FOTO ================= -->
+    <div id="photo-modal" class="modal-overlay hidden" style="align-items:center; padding:16px;" onclick="this.classList.add('hidden')">
+        <div class="card" style="width:100%; max-width:360px;" onclick="event.stopPropagation()">
+            <div class="row-between" style="margin-bottom:10px;">
+                <span id="zoom-title" style="font-size:12px; font-weight:800;">Foto Transaksi</span>
+                <button onclick="document.getElementById('photo-modal').classList.add('hidden')" style="border:none; background:var(--subcard); width:26px; height:26px; border-radius:50%; cursor:pointer;">✕</button>
+            </div>
+            <img id="zoom-img" src="" style="width:100%; max-height:280px; object-fit:contain; border-radius:12px; background:#000;">
+            <p id="zoom-note" class="subcard" style="font-size:12px; margin-top:10px; font-weight:600;"></p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const memStore = {};
+    function getStore(k) { try { return localStorage.getItem(k); } catch(e) { return memStore[k] || null; } }
+    function setStore(k, v) { try { localStorage.setItem(k, v); } catch(e) { memStore[k] = v; } }
+
+    function todayStr() {
+        const m = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        const d = new Date();
+        return String(d.getDate()).padStart(2,'0') + ' ' + m[d.getMonth()];
+    }
+
+    let transactions = null;
+    let userProfile = null;
+    try { transactions = JSON.parse(getStore('dewallet_tx')); } catch(e) {}
+    try { userProfile = JSON.parse(getStore('dewallet_user')); } catch(e) {}
+
+    if (!userProfile) {
+        userProfile = { name: 'Sultan DeWallet', phone: '0812-8888-9999', dreamTitle: 'Beli Gadget / Tabungan', dreamTarget: 5000000, dreamSaved: 1500000, themeMode: 'bento' };
+    }
+
+    if (!transactions || !Array.isArray(transactions)) {
+        const tgl = todayStr();
+        transactions = [
+            { id: 1, type: 'income', amount: 500000, category: 'Gaji / Bonus', note: 'Saldo awal masuk pagi', time: '08:00', date: tgl, photo: null },
+            { id: 2, type: 'expense', amount: 35000, category: 'Makanan', note: 'Sarapan kopi & roti', time: '09:30', date: tgl, photo: null },
+            { id: 3, type: 'income', amount: 250000, category: 'Gaji / Bonus', note: 'Dapat transferan proyek', time: '13:15', date: tgl, photo: null },
+            { id: 4, type: 'expense', amount: 85000, category: 'Belanja', note: 'Keluar beli kebutuhan harian', time: '16:40', date: tgl, photo: null }
+        ];
+    }
+
+    let modalType = 'income';
+    let editId = null;
+    let tempPhoto = null;
+    let filterMode = 'all';
+    let chartMode = 'saldo';
+    let hideSaldo = false;
+
+    function saveAll() {
+        setStore('dewallet_tx', JSON.stringify(transactions));
+        setStore('dewallet_user', JSON.stringify(userProfile));
+    }
+
+    function formatRp(n) {
+        return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+    }
+
+    function showToast(msg) {
+        const box = document.getElementById('toast-box');
+        const el = document.createElement('div');
+        el.className = 'toast-item';
+        el.innerText = msg;
+        box.appendChild(el);
+        setTimeout(() => el.remove(), 2500);
+    }
+
+    // JAM REAL-TIME SESUAI LOKASI PENGGUNA
+    function updateLocalClock() {
+        const now = new Date();
+        const jam = String(now.getHours()).padStart(2, '0');
+        const menit = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('clock-text').innerText = `${jam}.${menit}`;
+    }
+    setInterval(updateLocalClock, 1000);
+    updateLocalClock();
+
+    // PENGATUR 3 MODE DESAIN: TERANG, GELAP, BENTO
+    function setThemeMode(mode) {
+        userProfile.themeMode = mode;
+        const frame = document.getElementById('app-frame');
+        frame.classList.remove('dark-mode', 'bento-mode');
+
+        if (mode === 'dark') frame.classList.add('dark-mode');
+        if (mode === 'bento') frame.classList.add('bento-mode');
+
+        ['light', 'dark', 'bento'].forEach(m => {
+            const btn = document.getElementById('mode-' + m);
+            if (btn) btn.classList.toggle('active', m === mode);
+        });
+
+        saveAll();
+        renderAll();
+    }
+
+    function switchTab(tab) {
+        ['home','history','wallet','profile'].forEach(t => {
+            document.getElementById('tab-' + t).classList.add('hidden');
+            document.getElementById('nav-' + t).classList.remove('active');
+        });
+        document.getElementById('tab-' + tab).classList.remove('hidden');
+        document.getElementById('nav-' + tab).classList.add('active');
+        renderAll();
+    }
+
+    function toggleHideSaldo() {
+        hideSaldo = !hideSaldo;
+        renderAll();
+    }
+
+    // FITUR KETIK CEPAT
+    document.getElementById('quick-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') processQuickInput();
+    });
+
+    function processQuickInput() {
+        const inp = document.getElementById('quick-input');
+        const raw = inp.value.trim();
+        if (!raw) return showToast('Ketik contoh: dapat 100.000 atau keluar 35k makan');
+
+        const low = raw.toLowerCase();
+        let type = (low.includes('keluar') || low.includes('-') || low.includes('beli') || low.includes('bayar') || low.includes('jajan')) ? 'expense' : 'income';
+
+        const match = raw.match(/(\d+(?:[.,]\d+)*)\s*(jt|juta|rb|ribu|k)?/i);
+        if (!match) return showToast('Tulis angkanya! Cth: dapat 100.000');
+
+        let amount = 0;
+        const unit = (match[2] || '').toLowerCase();
+        if (unit === 'jt' || unit === 'juta') amount = Math.round(parseFloat(match[1].replace(',','.')) * 1000000);
+        else if (unit === 'rb' || unit === 'ribu' || unit === 'k') amount = Math.round(parseFloat(match[1].replace(',','.')) * 1000);
+        else amount = parseInt(match[1].replace(/[.,]/g, ''), 10);
+
+        if (!amount || amount <= 0) return showToast('Nominal tidak valid!');
+
+        let category = type === 'income' ? 'Gaji / Bonus' : 'Lainnya';
+        if (/(kopi|makan|sarapan|bakso|minum|jajan)/.test(low)) category = 'Makanan';
+        else if (/(bensin|gojek|grab|parkir|tol)/.test(low)) category = 'Transport';
+        else if (/(listrik|wifi|kuota|pulsa|air)/.test(low)) category = 'Tagihan';
+        else if (/(beli|baju|shopee|tokped|belanja)/.test(low)) category = 'Belanja';
+
+        let note = raw.replace(match[0], '').replace(/\b(dapat|masuk|keluar|\+|-)\b/gi, '').trim();
+        if (!note) note = type === 'income' ? 'Pemasukan Cepat' : 'Pengeluaran Cepat';
+
+        const now = new Date();
+        transactions.push({
+            id: Date.now(),
+            type,
+            amount,
+            category,
+            note,
+            time: now.toTimeString().slice(0,5),
+            date: todayStr(),
+            photo: null
+        });
+
+        inp.value = '';
+        saveAll();
+        renderAll();
+        showToast(`${type === 'income' ? '+' : '-'}${formatRp(amount)} berhasil dicatat!`);
+    }
+
+    // GRAFIK NAIK-TURUN PER JAM
+    function setChartMode(m) {
+        chartMode = m;
+        document.getElementById('btn-mode-saldo').style.background = m === 'saldo' ? '#09150e' : 'transparent';
+        document.getElementById('btn-mode-saldo').style.color = m === 'saldo' ? '#c8f904' : 'var(--muted)';
+        document.getElementById('btn-mode-inout').style.background = m === 'inout' ? '#09150e' : 'transparent';
+        document.getElementById('btn-mode-inout').style.color = m === 'inout' ? '#c8f904' : 'var(--muted)';
+        renderChart();
+    }
+
+    function renderChart() {
+        const box = document.getElementById('hourly-chart-box');
+        if (!box) return;
+        const sorted = [...transactions].sort((a,b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+
+        if (sorted.length === 0) {
+            box.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--muted);">Belum ada data transaksi</div>`;
+            return;
+        }
+
+        let running = 0;
+        const vals = sorted.map(t => {
+            if (chartMode === 'saldo') {
+                running += (t.type === 'income' ? t.amount : -t.amount);
+                return running;
+            }
+            return t.type === 'income' ? t.amount : -t.amount;
+        });
+
+        const minV = Math.min(...vals, 0);
+        const maxV = Math.max(...vals, 100000);
+        const range = (maxV - minV) || 1;
+        const W = 340, H = 145, padX = 26, padY = 22;
+
+        const points = vals.map((v, i) => {
+            const x = padX + (sorted.length > 1 ? (i / (sorted.length - 1)) * (W - padX * 2) : (W / 2));
+            const y = H - padY - ((v - minV) / range) * (H - padY * 2);
+            return { x, y, v, tx: sorted[i] };
+        });
+
+        const poly = points.map(p => `${p.x},${p.y}`).join(' ');
+        const area = `${points[0].x},${H - padY} ${poly} ${points[points.length-1].x},${H - padY}`;
+        const strokeColor = userProfile.themeMode === 'bento' ? '#15803d' : '#108ee9';
+
+        box.innerHTML = `
+            <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:100%; overflow:visible;">
+                <defs>
+                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="${strokeColor}" stop-opacity="0.30"/>
+                        <stop offset="100%" stop-color="${strokeColor}" stop-opacity="0.0"/>
+                    </linearGradient>
+                </defs>
+                <polygon points="${area}" fill="url(#chartGrad)"/>
+                <polyline fill="none" stroke="${strokeColor}" stroke-width="3" points="${poly}" stroke-linecap="round" stroke-linejoin="round"/>
+                ${points.map(p => {
+                    const col = p.tx.type === 'income' ? '#15803d' : '#e11d48';
+                    const shortVal = (p.tx.type === 'income' ? '+' : '-') + Math.round(p.tx.amount/1000) + 'k';
+                    return `
+                        <circle cx="${p.x}" cy="${p.y}" r="5" fill="${col}" stroke="#fff" stroke-width="1.5"/>
+                        <text x="${p.x}" y="${p.y - 8}" font-size="8.5" font-weight="bold" text-anchor="middle" fill="${col}">${shortVal}</text>
+                        <text x="${p.x}" y="${H - 4}" font-size="9" text-anchor="middle" fill="#64748b">${p.tx.time}</text>
+                    `;
+                }).join('')}
+            </svg>
+        `;
+    }
+
+    function renderAll() {
+        let totalIn = 0, totalOut = 0, expCount = 0;
+        const catMap = {};
+
+        transactions.forEach(t => {
+            if (t.type === 'income') totalIn += t.amount;
+            else {
+                totalOut += t.amount;
+                expCount++;
+                catMap[t.category] = (catMap[t.category] || 0) + t.amount;
+            }
+        });
+
+        const saldo = totalIn - totalOut;
+        document.getElementById('main-balance').innerText = hideSaldo ? 'Rp ••••••••' : formatRp(saldo);
+        document.getElementById('card-balance').innerText = hideSaldo ? 'Rp ••••••••' : formatRp(saldo);
+        document.getElementById('home-in').innerText = '+' + formatRp(totalIn);
+        document.getElementById('home-out').innerText = '-' + formatRp(totalOut);
+        document.getElementById('prof-in').innerText = formatRp(totalIn);
+        document.getElementById('prof-out').innerText = formatRp(totalOut);
+
+        // Update Ringkasan Kartu Bento
+        document.getElementById('bento-in-val').innerText = '+' + formatRp(totalIn);
+        document.getElementById('bento-out-val').innerText = '-' + formatRp(totalOut);
+        document.getElementById('bento-tx-count').innerText = `${transactions.length} Transaksi tercatat`;
+
+        document.getElementById('home-greeting').innerText = `Halo, ${userProfile.name}!`;
+        document.getElementById('prof-name').innerText = userProfile.name;
+        document.getElementById('card-owner').innerText = userProfile.name.toUpperCase();
+        document.getElementById('prof-phone').innerText = `ID DeWallet • ${userProfile.phone}`;
+
+        const avg = expCount > 0 ? Math.round(totalOut / expCount) : 0;
+        const sRate = totalIn > 0 ? Math.max(0, Math.round(((totalIn - totalOut) / totalIn) * 100)) : 0;
+        document.getElementById('avg-burn').innerText = formatRp(avg) + ' / tx';
+        document.getElementById('savings-rate').innerText = sRate + '%';
+
+        const catBox = document.getElementById('category-bars');
+        const catEntries = Object.entries(catMap).sort((a,b) => b[1] - a[1]);
+        if (catEntries.length === 0) {
+            catBox.innerHTML = `<div style="font-size:11px; color:var(--muted);">Belum ada pengeluaran.</div>`;
+        } else {
+            catBox.innerHTML = catEntries.map(([k, v]) => {
+                const pct = Math.round((v / totalOut) * 100);
+                return `
+                    <div>
+                        <div class="row-between" style="font-size:11px; font-weight:700; margin-bottom:3px;">
+                            <span>${k}</span>
+                            <span>${formatRp(v)} (${pct}%)</span>
+                        </div>
+                        <div style="height:6px; background:var(--border); border-radius:8px; overflow:hidden;">
+                            <div style="height:100%; width:${pct}%; background:var(--green);"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        const dPct = Math.min(100, Math.round(((userProfile.dreamSaved || 0) / (userProfile.dreamTarget || 1)) * 100));
+        document.getElementById('dream-name').innerText = userProfile.dreamTitle;
+        document.getElementById('dream-pct').innerText = dPct + '%';
+        document.getElementById('bento-dream-pct').innerText = dPct + '%';
+        document.getElementById('dream-desc').innerText = `Terkumpul ${formatRp(userProfile.dreamSaved)} dari ${formatRp(userProfile.dreamTarget)}`;
+        document.getElementById('dream-bar').style.width = dPct + '%';
+
+        const recentEl = document.getElementById('recent-list');
+        const reversed = [...transactions].reverse();
+        recentEl.innerHTML = reversed.slice(0, 4).map(txItemHTML).join('') || `<div style="font-size:11px; color:var(--muted); text-align:center;">Belum ada transaksi</div>`;
+
+        const q = (document.getElementById('search-box')?.value || '').toLowerCase();
+        const filtered = reversed.filter(t => {
+            const mF = filterMode === 'all' || (filterMode === 'photo' ? Boolean(t.photo) : t.type === filterMode);
+            const mQ = t.note.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || (t.time && t.time.includes(q));
+            return mF && mQ;
+        });
+        document.getElementById('history-list').innerHTML = filtered.map(txItemHTML).join('') || `<div style="font-size:11px; color:var(--muted); text-align:center; padding:20px;">Tidak ada transaksi ditemukan</div>`;
+
+        renderChart();
+    }
+
+    function txItemHTML(t) {
+        const isIn = t.type === 'income';
+        const col = isIn ? 'var(--green)' : 'var(--red)';
+        const sign = isIn ? '+' : '-';
+        return `
+            <div class="subcard row-between">
+                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                    <div style="width:36px; height:36px; border-radius:10px; background:${isIn ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)'}; color:${col}; display:flex; align-items:center; justify-content:center; font-weight:900; flex-shrink:0;">
+                        ${sign}
+                    </div>
+                    <div style="min-width:0;">
+                        <div style="font-size:12px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.note}</div>
+                        <div style="font-size:10px; color:var(--muted); margin-top:2px;">${t.category} • ${t.date || ''}, Jam ${t.time}</div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                    ${t.photo ? `<img src="${t.photo}" onclick="zoomPhoto(${t.id})" style="width:36px; height:36px; border-radius:8px; object-fit:cover; border:1px solid var(--green); cursor:pointer;">` : ''}
+                    <div style="text-align:right;">
+                        <div style="font-size:12px; font-weight:900; color:${col};">${sign}${formatRp(t.amount)}</div>
+                        <div style="display:flex; gap:6px; justify-content:flex-end; margin-top:2px;">
+                            <span onclick="editTx(${t.id})" style="font-size:10px; font-weight:800; cursor:pointer; text-decoration:underline;">Edit</span>
+                            <span onclick="deleteTx(${t.id})" style="font-size:10px; color:var(--muted); cursor:pointer;">Hapus</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function setFilter(f) {
+        filterMode = f;
+        ['all','income','expense','photo'].forEach(k => {
+            const btn = document.getElementById('f-' + k);
+            btn.className = k === f ? 'btn-primary' : 'card';
+        });
+        renderAll();
+    }
+
+    function openTxModal(type = 'income', tx = null) {
+        const modal = document.getElementById('tx-modal');
+        if (tx) {
+            editId = tx.id;
+            document.getElementById('tx-modal-title').innerText = 'Edit Transaksi';
+            setModalType(tx.type);
+            document.getElementById('m-amount').value = tx.amount.toLocaleString('id-ID');
+            document.getElementById('m-category').value = tx.category;
+            document.getElementById('m-time').value = tx.time;
+            document.getElementById('m-note').value = tx.note;
+            if (tx.photo) {
+                tempPhoto = tx.photo;
+                document.getElementById('m-photo-img').src = tempPhoto;
+                document.getElementById('m-photo-preview').classList.remove('hidden');
+            } else clearPhoto();
+        } else {
+            editId = null;
+            document.getElementById('tx-modal-title').innerText = 'Catat Transaksi';
+            setModalType(type);
+            document.getElementById('m-amount').value = '';
+            document.getElementById('m-note').value = '';
+            document.getElementById('m-time').value = new Date().toTimeString().slice(0,5);
+            clearPhoto();
+        }
+        modal.classList.remove('hidden');
+    }
+
+    function closeTxModal() { document.getElementById('tx-modal').classList.add('hidden'); }
+
+    function setModalType(t) {
+        modalType = t;
+        document.getElementById('m-btn-in').style.background = t === 'income' ? 'var(--green)' : 'transparent';
+        document.getElementById('m-btn-in').style.color = t === 'income' ? '#fff' : 'var(--muted)';
+        document.getElementById('m-btn-out').style.background = t === 'expense' ? 'var(--red)' : 'transparent';
+        document.getElementById('m-btn-out').style.color = t === 'expense' ? '#fff' : 'var(--muted)';
+    }
+
+    function formatInputRp(el) {
+        let v = el.value.replace(/\D/g, '');
+        el.value = v ? Number(v).toLocaleString('id-ID') : '';
+    }
+
+    function addNominal(n) {
+        const el = document.getElementById('m-amount');
+        let cur = parseInt(el.value.replace(/\D/g, '')) || 0;
+        el.value = (cur + n).toLocaleString('id-ID');
+    }
+
+    function handlePhoto(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const img = new Image();
+            img.onload = () => {
+                const c = document.createElement('canvas');
+                const max = 400;
+                let w = img.width, h = img.height;
+                if (w > h && w > max) { h *= max/w; w = max; }
+                else if (h > max) { w *= max/h; h = max; }
+                c.width = w; c.height = h;
+                c.getContext('2d').drawImage(img, 0, 0, w, h);
+                tempPhoto = c.toDataURL('image/jpeg', 0.75);
+                document.getElementById('m-photo-img').src = tempPhoto;
+                document.getElementById('m-photo-preview').classList.remove('hidden');
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearPhoto() {
+        tempPhoto = null;
+        document.getElementById('m-photo').value = '';
+        document.getElementById('m-photo-preview').classList.add('hidden');
+    }
+
+    function saveTransaction(e) {
+        e.preventDefault();
+        const amount = parseInt(document.getElementById('m-amount').value.replace(/\D/g, ''));
+        if (!amount || amount <= 0) return showToast('Masukkan nominal!');
+        const category = document.getElementById('m-category').value;
+        const time = document.getElementById('m-time').value || '12:00';
+        const note = document.getElementById('m-note').value.trim() || category;
+
+        if (editId) {
+            const idx = transactions.findIndex(t => t.id === editId);
+            if (idx > -1) transactions[idx] = { ...transactions[idx], type: modalType, amount, category, time, note, photo: tempPhoto };
+            showToast('Transaksi diperbarui!');
+        } else {
+            transactions.push({ id: Date.now(), type: modalType, amount, category, time, date: todayStr(), note, photo: tempPhoto });
+            showToast('Transaksi disimpan!');
+        }
+        closeTxModal();
+        saveAll();
+        renderAll();
+    }
+
+    function editTx(id) {
+        const tx = transactions.find(t => t.id === id);
+        if (tx) openTxModal(tx.type, tx);
+    }
+
+    function deleteTx(id) {
+        transactions = transactions.filter(t => t.id !== id);
+        saveAll();
+        renderAll();
+        showToast('Transaksi dihapus.');
+    }
+
+    function zoomPhoto(id) {
+        const tx = transactions.find(t => t.id === id);
+        if (!tx || !tx.photo) return;
+        document.getElementById('zoom-title').innerText = `${tx.category} • Jam ${tx.time}`;
+        document.getElementById('zoom-img').src = tx.photo;
+        document.getElementById('zoom-note').innerText = `${tx.note} (${formatRp(tx.amount)})`;
+        document.getElementById('photo-modal').classList.remove('hidden');
+    }
+
+    function openCustomModal(title, html) {
+        document.getElementById('custom-title').innerText = title;
+        document.getElementById('custom-body').innerHTML = html;
+        document.getElementById('custom-modal').classList.remove('hidden');
+    }
+    function closeCustomModal() { document.getElementById('custom-modal').classList.add('hidden'); }
+
+    function openProfileSheet() {
+        openCustomModal('Ubah Profil Akun', `
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <input id="p-name" class="input-box" value="${userProfile.name}" placeholder="Nama Akun">
+                <input id="p-phone" class="input-box" value="${userProfile.phone}" placeholder="Nomor HP / ID">
+                <button onclick="saveProfile()" class="btn-primary">Simpan Profil</button>
+            </div>
+        `);
+    }
+    function saveProfile() {
+        userProfile.name = document.getElementById('p-name').value.trim() || userProfile.name;
+        userProfile.phone = document.getElementById('p-phone').value.trim() || userProfile.phone;
+        saveAll(); renderAll(); closeCustomModal(); showToast('Profil diperbarui!');
+    }
+
+    function openDreamSheet() {
+        openCustomModal('Ubah Target Impian', `
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <input id="d-title" class="input-box" value="${userProfile.dreamTitle}" placeholder="Nama Impian">
+                <input id="d-target" class="input-box" oninput="formatInputRp(this)" value="${userProfile.dreamTarget.toLocaleString('id-ID')}" placeholder="Target (Rp)">
+                <button onclick="saveDream()" class="btn-primary">Simpan Target</button>
+            </div>
+        `);
+    }
+    function saveDream() {
+        userProfile.dreamTitle = document.getElementById('d-title').value.trim() || userProfile.dreamTitle;
+        userProfile.dreamTarget = parseInt(document.getElementById('d-target').value.replace(/\D/g,'')) || userProfile.dreamTarget;
+        saveAll(); renderAll(); closeCustomModal(); showToast('Target Impian diperbarui!');
+    }
+
+    function openDepositDreamSheet() {
+        openCustomModal('Tabung ke Impian', `
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <input id="d-add" class="input-box" oninput="formatInputRp(this)" placeholder="Masukkan Nominal (Rp)">
+                <button onclick="saveDepositDream()" class="btn-primary">+ Tambah Tabungan</button>
+            </div>
+        `);
+    }
+    function saveDepositDream() {
+        const val = parseInt(document.getElementById('d-add').value.replace(/\D/g,''));
+        if (!val) return;
+        userProfile.dreamSaved = (userProfile.dreamSaved || 0) + val;
+        saveAll(); renderAll(); closeCustomModal(); showToast(`+${formatRp(val)} ditabung ke Impian!`);
+    }
+
+    function openResetSheet() {
+        openCustomModal('Reset Semua Data?', `
+            <p style="font-size:12px; color:var(--muted); margin-bottom:12px;">Semua histori transaksi akan dihapus.</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <button onclick="closeCustomModal()" class="subcard" style="cursor:pointer; font-weight:800;">Batal</button>
+                <button onclick="transactions=[]; userProfile.dreamSaved=0; saveAll(); renderAll(); closeCustomModal(); showToast('Data di-reset!');" class="btn-primary" style="background:var(--red); color:#fff;">Ya, Hapus</button>
+            </div>
+        `);
+    }
+
+    function exportCSV() {
+        let csv = 'Tanggal,Jam,Tipe,Kategori,Nominal,Catatan\n';
+        transactions.forEach(t => { csv += `"${t.date}","${t.time}","${t.type}","${t.category}",${t.amount},"${t.note}"\n`; });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        a.download = 'DeWallet_Laporan.csv';
+        a.click();
+        showToast('Laporan CSV diunduh!');
+    }
+
+    // Inisialisasi tema awal
+    setThemeMode(userProfile.themeMode || 'bento');
+</script>
+</body>
+</html>
